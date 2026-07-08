@@ -19,6 +19,7 @@ app.add_middleware(
     allow_origins=[ALLOWED_ORIGIN, EXAM_PAGE_ORIGIN, "https://tds.s-anand.net"],
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 RATE_BUCKETS: dict = {}
@@ -45,6 +46,7 @@ async def context_and_rate_limit(request: Request, call_next):
             headers["Access-Control-Allow-Origin"] = origin
             headers["Access-Control-Allow-Headers"] = "*"
             headers["Access-Control-Allow-Methods"] = "*"
+            headers["Access-Control-Expose-Headers"] = "X-Request-ID, Retry-After"
         return JSONResponse(
             status_code=429, 
             content={"detail": "rate limit exceeded"},

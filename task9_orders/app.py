@@ -12,6 +12,7 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 T = 59            # total orders in catalog
@@ -40,6 +41,7 @@ async def rate_limit_orders(request: Request, call_next):
                     "Access-Control-Allow-Origin": "*",
                     "Access-Control-Allow-Methods": "*",
                     "Access-Control-Allow-Headers": "*",
+                    "Access-Control-Expose-Headers": "Retry-After",
                 },
             )
         bucket.append(now)
