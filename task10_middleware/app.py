@@ -58,6 +58,14 @@ async def context_and_rate_limit(request: Request, call_next):
 
     response = await call_next(request)
     response.headers["X-Request-ID"] = request_id
+    
+    # Expose X-Request-ID header to the browser's CORS request
+    origin = request.headers.get("Origin")
+    if origin in [ALLOWED_ORIGIN, EXAM_PAGE_ORIGIN, "https://tds.s-anand.net"]:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Expose-Headers"] = "X-Request-ID, Retry-After"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "*"
     return response
 
 
