@@ -32,7 +32,7 @@ async def chat_completions(request: Request):
     response_content = ""
     
     # 1. Echo token (TKxxxxxx)
-    tk_match = re.search(r'(TK[0-9a-fA-F]{6})', prompt, re.IGNORECASE)
+    tk_match = re.search(r'(TK[a-zA-Z0-9]+)', prompt)
     if tk_match:
         token = tk_match.group(1)
         response_content += f"The token you asked for is {token}. "
