@@ -1,0 +1,6 @@
+redis_db.json
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/

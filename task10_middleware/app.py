@@ -8,11 +8,7 @@ from fastapi.responses import JSONResponse
 
 EMAIL = "24f2000793@ds.study.iitm.ac.in"
 ALLOWED_ORIGIN = "https://app-i0zto9.example.com"
-
-# The exam page itself needs to be able to call /ping to verify your service.
-# Set EXAM_PAGE_ORIGIN as an env var to the real origin shown on the assignment
-# page (e.g. https://tds.s-anand.net) if the grader runs from a different origin.
-EXAM_PAGE_ORIGIN = os.environ.get("EXAM_PAGE_ORIGIN", "https://tds.s-anand.net")
+EXAM_PAGE_ORIGIN = "https://exam.sanand.workers.dev"
 
 B = 14  # requests per window
 WINDOW = 10
@@ -20,7 +16,7 @@ WINDOW = 10
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[ALLOWED_ORIGIN, EXAM_PAGE_ORIGIN],
+    allow_origins=[ALLOWED_ORIGIN, EXAM_PAGE_ORIGIN, "https://tds.s-anand.net"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -30,15 +26,32 @@ RATE_BUCKETS: dict = {}
 
 @app.middleware("http")
 async def context_and_rate_limit(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
     client_id = request.headers.get("X-Client-Id", "anonymous")
     now = time.time()
     bucket = RATE_BUCKETS.setdefault(client_id, [])
     bucket[:] = [t for t in bucket if now - t < WINDOW]
-    if len(bucket) >= B:
-        return JSONResponse(status_code=429, content={"detail": "rate limit exceeded"})
-    bucket.append(now)
 
-    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+    request_id = request.headers.get("X-Request-ID") or request.headers.get("x-request-id") or str(uuid.uuid4())
+
+    if len(bucket) >= B:
+        origin = request.headers.get("Origin")
+        headers = {
+            "X-Request-ID": request_id,
+        }
+        if origin in [ALLOWED_ORIGIN, EXAM_PAGE_ORIGIN, "https://tds.s-anand.net"]:
+            headers["Access-Control-Allow-Origin"] = origin
+            headers["Access-Control-Allow-Headers"] = "*"
+            headers["Access-Control-Allow-Methods"] = "*"
+        return JSONResponse(
+            status_code=429, 
+            content={"detail": "rate limit exceeded"},
+            headers=headers
+        )
+        
+    bucket.append(now)
     request.state.request_id = request_id
 
     response = await call_next(request)

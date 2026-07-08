@@ -24,6 +24,8 @@ RATE_BUCKETS: dict = {}
 
 @app.middleware("http")
 async def rate_limit_orders(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return await call_next(request)
     if request.url.path == "/orders":
         client_id = request.headers.get("X-Client-Id", "anonymous")
         now = time.time()
@@ -33,7 +35,12 @@ async def rate_limit_orders(request: Request, call_next):
             return JSONResponse(
                 status_code=429,
                 content={"detail": "rate limit exceeded"},
-                headers={"Retry-After": str(WINDOW)},
+                headers={
+                    "Retry-After": str(WINDOW),
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "*",
+                    "Access-Control-Allow-Headers": "*",
+                },
             )
         bucket.append(now)
     return await call_next(request)
